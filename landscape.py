@@ -136,18 +136,21 @@ def split(ques):
     huida(result,ques)
 def refresh_ques(ques):
 
-        """
-        pyautogui.moveTo(3785, 1833)
+
+        pyautogui.moveTo(3274, 1697)
         pyautogui.click()
         pyautogui.mouseDown(button='left')
         pyautogui.dragTo(2429, 114, 0.5, button='left')
         pyautogui.mouseUp(button='left')
+        pyautogui.hotkey("ctrl", "c")
+        shuru(ques)
         """
         pyautogui.moveTo(2389, 1183)
         pyautogui.doubleClick()
         pyautogui.hotkey("ctrl","c")
         #print("获得问题")
         keyy(ques)
+        """
 
 def keyy(ques):
     #print(ques)
@@ -191,8 +194,8 @@ def shuru(ques):
     xinwenti=""
     laizi=""
     for i in lines:
-        if "咸蛋:" in i:
-       # if "爸爸:" in i or "妈妈" in i:
+        #if "咸蛋:" in i:
+        if "爸爸:" in i or "妈妈" in i:
             if lines[hang+1] not in ques:
 
                 xinwenti=lines[hang+1]

@@ -2,7 +2,7 @@ import socket
 import threading
 
 host = '127.0.0.1'  # 设置服务器的IP地址或域名
-port = 8000  # 设置服务器的端口号
+port = 1234  # 设置服务器的端口号
 
 # 创建TCP套接字对象
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
