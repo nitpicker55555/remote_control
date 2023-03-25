@@ -15,7 +15,7 @@ def two_to_one():
     sock2.listen(5)
     print('Listening on port', port2)
     conn2, addr2 = sock2.accept()
-    print('Connected by', addr2,time.asctime())
+    print('Connected by two', addr2,time.asctime())
     connections[port2] = True
     while not stop_event.is_set():
         try:
@@ -47,9 +47,8 @@ def two_to_one():
 
                 # stop_event.is_set()
                 os._exit(0)
-
-
-            print(data, port2)
+            if "sb" not in data_de:
+                print(data, port2)
             #print(connections)
             if connections[port1] != None:
                 try:
@@ -71,7 +70,7 @@ def one_to_two():#电脑给手机发 #第一个端口
     sock1.listen(5)
     print('Listening on port', port1)
     conn1, addr1 = sock1.accept()
-    print('Connected by', addr1,time.asctime())
+    print('Connected by one', addr1,time.asctime())
     connections[port1] = True
     while not stop_event.is_set():
         try:
@@ -126,7 +125,13 @@ def reboot_conn(term):
         print("build thread..." + term)
         t2.start()
     print("thread estabilished...", connections)
-
+def reboot_check():
+    while True:
+        start_time = time.time()
+        while time.time()-start_time<7200:
+                 pass
+        print("2 hour and reboot")
+        stop_event.is_set()
 
 
 def main():
@@ -138,8 +143,10 @@ def main():
 
     t2 = threading.Thread(target=two_to_one)
     t1 = threading.Thread(target=one_to_two)
+    t3 = threading.Thread(target=reboot_check)
     t1.start()
     t2.start()
+    t3.start()
 
 
 if __name__ == '__main__':

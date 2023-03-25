@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Three.js GLB Model</title>
+    <style>
+      body {
+ background-color: white;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+	<script src="https://cdn.jsdelivr.net/npm/three@0.131.2/build/three.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/three@0.131.2/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <script>
+      // 创建场景、相机和渲染器
+let gltf;
+var startRotationY=0;
+var endRotationY;
+console.log("kaishi",startRotationY);
+let raycaster = new THREE.Raycaster();
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        Window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // 加载模型
+
+      var loader = new THREE.GLTFLoader();
+loader.load('building.glb', function (loadedGltf) {
+gltf = loadedGltf;
+        scene.add(gltf.scene);
+ 
+
+
+  tween = new TWEEN.Tween({y:startRotationY})
+    .to({ y: Math.PI }, 2000) // 旋转到目标角度，持续时间为 duration
+    .easing(TWEEN.Easing.Quadratic.Out) // 缓动函数
+.onUpdate((object) => {
+          gltf.scene.rotation.y = object.y
+        startRotationY =gltf.scene.rotation.y 
+console.log(startRotationY );
+    });
+
+});
+
+function onmodelclick(event) {
+console.log("click",startRotationY);
+  endRotationY = startRotationY + Math.PI;
+console.log("start",startRotationY );
+console.log("end",endRotationY  );
+tween.start();
+}
+
+      // 添加光源
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+      scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+      scene.add(directionalLight);
+
+      // 更新相机位置
+      camera.position.z = 1;
+
+      // 渲染场景
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+ TWEEN.update(); // 添加 TWEEN.update 方法
+}
+animate();
+
+ window.addEventListener("click", onmodelclick);
+      animate();
+    </script>
+  </body>
+</html>
