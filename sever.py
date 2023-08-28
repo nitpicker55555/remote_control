@@ -143,10 +143,10 @@ def main():
 
     t2 = threading.Thread(target=two_to_one)
     t1 = threading.Thread(target=one_to_two)
-    t3 = threading.Thread(target=reboot_check)
+    #t3 = threading.Thread(target=reboot_check)
     t1.start()
     t2.start()
-    t3.start()
+    #t3.start()
 
 
 if __name__ == '__main__':

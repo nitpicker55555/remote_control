@@ -6,6 +6,8 @@ import static android.opengl.Matrix.length;
 import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -106,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private static final int DOUBLE_CLICK_INTERVAL = 300; // 双击事件的时间间隔，单位为毫秒
     private static final long CLICK_INTERVAL_TIME = 300;
     private float lastX, lastY;
-    private EditText mEditText,mEditText2,mEditText4,mEditText3;
+    private EditText mEditText,mEditText2,mEditText4,mEditText3,mip_text;
 
 
     private TextView mStatusTextView, mMessageTextView;
@@ -134,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private int wordSize = 0;
     private String image_kind;
     private static final String TAG = "PERMISSION_TAG";
-    String[] options = { "capture_image","capture_camera","win 3","win 1", "backspace","volumemute","volumeup","volumedown","shutdown_sever"};
+    String[] options = { "get_clip","capture_image","capture_camera","win 3","win 1", "backspace","volumemute","volumeup","volumedown","shutdown_sever"};
     Handler handler = new Handler(Looper.getMainLooper());
     private static final String[] PERMISSIONS_STORAGE = {
             android.Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -147,6 +149,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         setContentView(R.layout.activity_main);
         Spinner mySpinner = (Spinner) findViewById(R.id.mySpinner);
         mEditText = findViewById(R.id.editText);
+        mip_text = findViewById(R.id.ip_text);
         mEditText2 = findViewById(R.id.editText2);
         mEditText3 = findViewById(R.id.editText3);
         mEditText4 = findViewById(R.id.editText4);
@@ -175,25 +178,38 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         if (isNetworkAvailable(this)) {
             showBubble("网络通畅");
-            try {
-                nettyClient = new NettyClient("130.61.253.72",1234);
-
-                // Start the client in a separate thread
-                new Thread(() -> {
+            new Thread(() -> {
+                boolean isConnected = false;
+                while (!isConnected) {
                     try {
+                        nettyClient = new NettyClient(mip_text.getText().toString(),1234);
                         nettyClient.run();
-                        ;
+                        isConnected = true;  //连接成功，跳出循环
                     } catch (InterruptedException e) {
-
                         e.printStackTrace();
                         runOnUiThread(() -> mStatusTextView.setText("连接失败1"));
+                        // 重试之前的等待时间，避免过度消耗资源
+                        try {
+                            Thread.sleep(2000);
+                            showBubble("连接失败1 尝试重连");
+                        } catch (InterruptedException interruptedException) {
+                            interruptedException.printStackTrace();
+                        }
+                    } catch (Exception e) {
+                        // 其他异常，显示错误消息
+                        e.printStackTrace();
+                        runOnUiThread(() -> mStatusTextView.setText("连接失败2"));
+                        // 重试之前的等待时间，避免过度消耗资源
+                        try {
+                            Thread.sleep(2000);
+                            showBubble("连接失败2 尝试重连");
+                        } catch (InterruptedException interruptedException) {
+                            interruptedException.printStackTrace();
+                        }
                     }
-                }).start();
-            } catch (Exception e) {
-                // 其他异常，显示错误消息
-                e.printStackTrace();
-                runOnUiThread(() -> mStatusTextView.setText("连接失败2"));
-            }
+                }
+            }).start();
+
         } else {
             showBubble("网络不通畅");
             // 尝试连接服务器
@@ -567,52 +583,70 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     }
     public class NettyClient {
 
-        private final String host;
+        private String host;
         private final int port;
         private ChannelFuture future;
 
         public NettyClient(String host, int port) {
-            this.host = host;
-            this.port = port;
+            this.host = mip_text.getText().toString();
+            this.port = 1234;
         }
 
         public void run() throws InterruptedException {
-            // Create an event loop group
-            NioEventLoopGroup group = new NioEventLoopGroup();
+            // Maximum number of retry attempts
+            int maxRetryAttempts = 7;
+            int retryCount = 0;
 
-            try {
-                // Create a bootstrap for setting up the client
-                Bootstrap bootstrap = new Bootstrap();
+            while (retryCount < maxRetryAttempts) {
+                // Create an event loop group
+                NioEventLoopGroup group = new NioEventLoopGroup();
+                host = mip_text.getText().toString();
+                try {
+                    // Create a bootstrap for setting up the client
+                    Bootstrap bootstrap = new Bootstrap();
 
-                // Configure the bootstrap
-                bootstrap.group(group)
-                        .channel(NioSocketChannel.class)
-                        .handler(new ChannelInitializer<SocketChannel>() {
-                            @Override
-                            public void initChannel(SocketChannel ch) {
-                                ch.pipeline().addLast(new NettyClientHandler());
-                            }
-                        });
+                    // Configure the bootstrap
+                    bootstrap.group(group)
+                            .channel(NioSocketChannel.class)
+                            .handler(new ChannelInitializer<SocketChannel>() {
+                                @Override
+                                public void initChannel(SocketChannel ch) {
+                                    ch.pipeline().addLast(new NettyClientHandler());
+                                }
+                            });
 
-                // Connect to the server
-                future = bootstrap.connect(host, port).sync();
-                runOnUiThread(() -> mStatusTextView.setText("连接成功"));
+                    // Connect to the server
+                    future = bootstrap.connect(host, port).sync();
+                    runOnUiThread(() -> mStatusTextView.setText("连接成功3"));
 
-                // Wait for the channel to close
-                future.channel().closeFuture().sync();
+                    // Wait for the channel to close
+                    future.channel().closeFuture().sync();
+                    break;
 
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                } catch (InterruptedException e) {
 
-            }catch (Exception e) {
-                // 其他异常，显示错误消息
-                e.printStackTrace();
-                runOnUiThread(() -> mStatusTextView.setText("连接失败3"));}finally {
-                // Shut down the event loop group
-                group.shutdownGracefully();
+                    e.printStackTrace();
+                    retryCount++;
+                    showBubble(String.valueOf(retryCount)+"retry"+host);
+                    if (retryCount >= maxRetryAttempts) {
+                        throw e; // Rethrow the exception if maximum retry attempts reached
+                    }
+
+                } catch (Exception e) {
+                    // 其他异常，显示错误消息
+                    e.printStackTrace();
+                    runOnUiThread(() -> mStatusTextView.setText("连接失败3"));
+                    retryCount++;
+                    showBubble(String.valueOf(retryCount)+"retry  "+host);
+                    Thread.sleep(300);
+                } finally {
+                    // Shut down the event loop group
+                    group.shutdownGracefully();
+                }
             }
         }
-//照片的接收是分为很多package，一次就接收那么多，再循环接收也是-1!!!!!!所以为什么if png else 会失效，就因为数据包不是一次性来的！！！！！
+
+        //照片的接收是分为很多package，一次就接收那么多，再循环接收也是-1!!!!!!所以为什么if png else 会失效，就因为数据包不是一次性来的！！！！！
         private class NettyClientHandler extends ChannelInboundHandlerAdapter {
             @RequiresApi(api = Build.VERSION_CODES.R)
             @Override
@@ -643,6 +677,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                             ByteBuf byteBuf_wenz = response.slice(0, wordSize).order(ByteOrder.LITTLE_ENDIAN);
                             String wenz =byteBuf_wenz.toString(CharsetUtil.UTF_8);
                             System.out.println("receive data   "+wenz);
+
                             runOnUiThread(() -> mEditText2.setText(wenz));
                             wordSize=0;
                         }
@@ -655,7 +690,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 if (imageSize!=0){
 
                     try (//将非图片数据传入mEditText2
-                        InputStream inputStream = new ByteBufInputStream(response)){
+                         InputStream inputStream = new ByteBufInputStream(response)){
 
                         int rest_data;
                         rest_data=response.readableBytes();
@@ -663,41 +698,41 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                         if (rest_data>10){
                             int step_length=Math.min(rest_data,imageSize-image_package_int);
 
-                        ByteArrayOutputStream outputStream2 = new ByteArrayOutputStream( );
+                            ByteArrayOutputStream outputStream2 = new ByteArrayOutputStream( );
 
-                        // Handle the response from the server
-                        //runOnUiThread(() -> mEditText2.setText(data));
-                        byte[] buffer = new byte[1024];
-                        //byte[] buffer_end=new byte[imageSize];
-                        int bytesRead = 0;
-                        int bytesumme=0;
-                        //boolean stand=false;
-                        boolean hasReceivedEnough = false;
-                        while ( !hasReceivedEnough) {
-                            if (step_length-bytesumme!=0) {
+                            // Handle the response from the server
+                            //runOnUiThread(() -> mEditText2.setText(data));
+                            byte[] buffer = new byte[1024];
+                            //byte[] buffer_end=new byte[imageSize];
+                            int bytesRead = 0;
+                            int bytesumme=0;
+                            //boolean stand=false;
+                            boolean hasReceivedEnough = false;
+                            while ( !hasReceivedEnough) {
+                                if (step_length-bytesumme!=0) {
 
 
-                                if (bytesRead==-1) {
+                                    if (bytesRead==-1) {
+                                        hasReceivedEnough=true;
+                                    }
+
+
+                                    try {
+
+                                        bytesRead = inputStream.read(buffer, 0, Math.min(buffer.length, (step_length - bytesumme)));
+                                    } catch (IOException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                    outputStream2.write(buffer,0, bytesRead);
+                                    bytesumme=bytesumme+bytesRead;
+                                    System.out.println("step_length"+(step_length)+"bytesumme"+(bytesumme)+"---"+(step_length-bytesumme));
+
+                                    System.out.println("buffer.length"+(buffer.length));
+                                    System.out.println("bytesRead"+bytesRead);
+                                }
+                                else {
                                     hasReceivedEnough=true;
                                 }
-
-
-                                try {
-
-                                    bytesRead = inputStream.read(buffer, 0, Math.min(buffer.length, (step_length - bytesumme)));
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                                outputStream2.write(buffer,0, bytesRead);
-                                bytesumme=bytesumme+bytesRead;
-                                System.out.println("step_length"+(step_length)+"bytesumme"+(bytesumme)+"---"+(step_length-bytesumme));
-
-                                System.out.println("buffer.length"+(buffer.length));
-                                System.out.println("bytesRead"+bytesRead);
-                            }
-                            else {
-                                hasReceivedEnough=true;
-                            }
 
                             }
                             byte[] c= outputStream2.toByteArray( );
@@ -735,12 +770,12 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
 
 
-                            }}
+                                }}
 
 
 
-                    }  {
-                        response.release();
+                        }  {
+                            response.release();
                         }
 
                     }catch (Exception e) {
@@ -749,9 +784,16 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                         runOnUiThread(() -> mStatusTextView.setText("连接失败2"));
                     }
                 }
-            else{
+                else{
                     String wenz =response.toString(CharsetUtil.UTF_8);
                     System.out.println("receive data   "+wenz);
+                    if (!"get it".equals(wenz)){
+                        copyToClipboard(wenz);
+                        if(wenz.contains("http")){
+                            Log.d("acc","http存在 " +wenz);
+                            openWebPage(wenz);
+                        }
+                    }
                     runOnUiThread(() -> mEditText2.setText(wenz));
                 }}
         }
@@ -799,7 +841,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         outputStream.close();
     }
     private void showBubble(String message) {
-        Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+        runOnUiThread(() -> Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show());
     }
     public boolean onTouch(View v, MotionEvent event) {
         float x = event.getRawX();
@@ -932,6 +974,23 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
     /*Handle permission request results*/
+    public void openWebPage(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse(url));
+        startActivity(intent);
+    }
+    public void copyToClipboard(String text) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("label", "phone_clip_web"+text);
+        if (text.contains("http")){
+            clip = ClipData.newPlainText("label", "phone_clip_web: "+text);
+        }
+        else {
+             clip = ClipData.newPlainText("label", text);
+        }
+
+        clipboard.setPrimaryClip(clip);
+    }
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);

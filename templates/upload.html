@@ -1,0 +1,50 @@
+<!doctype html>
+
+<title>Upload File</title>
+<h1 style="font-size: 5vw;">Upload File</h1>
+<progress id="progressBar" value="0" max="100" style="width: 80vw; height: 5vh;"></progress>
+<form id="uploadForm" method=post enctype=multipart/form-data>
+  <label for="fileInput" style="display: block; height: 10vh; width: 80vw; border: 1px solid black; text-align: center; line-height: 10vh;">
+    Select file
+  </label>
+  <input type=file id="fileInput" name=file multiple style="display: none;">
+  <textarea id="fileList" readonly style="width: 80vw; height: 10vh;"></textarea>
+  <input type=submit value=Upload style="height: 10vh; width: 80vw;">
+</form>
+
+<script>
+var form = document.getElementById('uploadForm');
+var fileInput = document.getElementById('fileInput');
+var fileList = document.getElementById('fileList');
+var progressBar = document.getElementById('progressBar');
+
+fileInput.onchange = function() {
+    fileList.textContent = '';
+    for (var i = 0; i < fileInput.files.length; i++) {
+        fileList.textContent += fileInput.files[i].name + '\n';
+    }
+}
+
+form.onsubmit = function(event) {
+    event.preventDefault();
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/', true);
+
+    xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+            progressBar.max = e.total;
+            progressBar.value = e.loaded;
+        }
+    }
+
+    xhr.onload = function() {
+        if (this.status == 200) {
+            alert('Upload complete!');
+            progressBar.value = 0;  // Reset progress bar
+        }
+    };
+
+    xhr.send(new FormData(form));
+};
+</script>

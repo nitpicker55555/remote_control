@@ -43,10 +43,10 @@ def split(ques):
 def refresh_ques(ques):
 
 
-        pyautogui.moveTo(3274, 1697)#微信界面右下角
+        pyautogui.moveTo(2374, 1147)#微信界面右下角
         pyautogui.click()
         pyautogui.mouseDown(button='left')
-        pyautogui.dragTo(2429, 114, 0.5, button='left')#微信界面左上角，确保把所有信息都选中
+        pyautogui.dragTo(1817, 146, 0.5, button='left')#微信界面左上角，确保把所有信息都选中
         pyautogui.mouseUp(button='left')
         pyautogui.hotkey("ctrl", "c")
         shuru(ques)
@@ -88,28 +88,26 @@ def keyy(ques):
 def shuru(ques):
     print(ques)
     s = pyperclip.paste()
-    start = "start"
-    index_a = s.rfind(start)  # 只查找”开始“以后的信息
+    index_a = s.rfind("开始")#只查找”开始“以后的信息
     index_b = s.rfind("：")
-    s = s[index_a + len(start):]
-    chat_items = s.splitlines()
+    s=s[index_a+2:]
+    lines= s.splitlines()
 
     hang=0
     xinwenti=""
     laizi=""
-    print(chat_items)
-    for i in chat_items:
-        if i!="" and i[-1]!="]":
+    for i in lines:
+        if i=="955:":
+        #if "爸爸:" in i or "妈妈" in i: #这里修改需要接收的问题来源
 
-            time_str, name_and_message = i.split('] ')
-            name, message = name_and_message.split(': ', 1)
+            if hang+1<len(lines) and lines[hang+1] not in ques:
 
-            if name=="Nicolai":
-                if message not in ques:
-                    laizi=name
-                    ques.append(message)
-                    xinwenti=message
+                xinwenti=lines[hang+1]
+                ques.append(lines[hang+1])
+                laizi=lines[hang]
 
+                print("有问题：",lines[hang],lines[hang+1])
+        hang+=1
     if xinwenti!="":
         print("新问题：", xinwenti)
         huida(str(time.asctime()[3])+"来自"+laizi+"的问题已经收到，正在生成回答...")
@@ -119,25 +117,26 @@ def shuru(ques):
         refresh_ques(ques)
 
 def wenti(text,ques):
-    pyautogui.moveTo(814, 1936)#这里是chatgpt的对话框坐标
+    pyautogui.moveTo(1255, 1376)#这里是chatgpt的对话框坐标
     pyautogui.click()
     pyperclip.copy(text)
     pyautogui.hotkey('ctrl', 'v')
     pyautogui.hotkey('enter')
-    pyautogui.moveTo(983, 1492)#这里是chatgpt的界面，确保对话框不获得焦点，使得ctrl a全选可以选中整个页面
+    pyautogui.moveTo(1006, 877)#这里是chatgpt的界面，确保对话框不获得焦点，使得ctrl a全选可以选中整个页面
     pyautogui.click()
     refresh(ques)
 def huida(result,ques=None):
-    pyautogui.moveTo(3240, 1989)#发现新问题后，回到微信对话框的坐标，输出“问题收到”
+    pyautogui.moveTo(2296, 1364)#发现新问题后，回到微信对话框的坐标，输出“问题收到”
     pyautogui.click()
     pyperclip.copy(result)
     pyautogui.hotkey('ctrl', 'v')
     pyautogui.hotkey('enter')
+
     if ques!=None:
         refresh_ques(ques)
 
 
 ques=[]
-refresh_ques(ques) #这是启动程序
-
-#position() #坐标定位程序
+refresh_ques(ques)
+#pyautogui.moveTo(814, 1936)
+#position()

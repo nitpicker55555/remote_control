@@ -1,46 +1,59 @@
-import socket
-import threading
+import json, numpy
+from transformers import BertTokenizer, BertModel
+import torch
+import torch.nn as nn
+model_name = 'bert-base-uncased'
+tokenizer = BertTokenizer.from_pretrained(model_name)
+model = BertModel.from_pretrained(model_name)
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model.to(device)
+from transformers import BertModel
+import torch.nn as nn
 
-host = '127.0.0.1'  # 设置服务器的IP地址或域名
-port = 4321  # 设置服务器的端口号
+import torch
+import torch.nn as nn
+from transformers import BertModel, BertTokenizer
+import json
 
-# 创建TCP套接字对象
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+class DimensionalityReducer(nn.Module):
+    def __init__(self, input_dim=768, output_dim=300):
+        super(DimensionalityReducer, self).__init__()
+        self.linear = nn.Linear(input_dim, output_dim)
 
-# 连接服务器
-client_socket.connect((host, port))
+    def forward(self, embeddings):
+        return self.linear(embeddings)
 
-# 定义接收用户输入的线程函数
-def input_thread():
-    while True:
-        # 从用户输入中获取数据
-        user_input = input("输入消息：")
+# Instantiate the tokenizer and model
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+model = BertModel.from_pretrained('bert-base-uncased')
 
-        # 发送数据到服务器
-        client_socket.send(user_input.encode())
+# Instantiate the reducer
+reducer = DimensionalityReducer().to(device)
+data_sentence={}
+with open('data.json', 'r') as f:
+    for line_number, line in enumerate(f, start=1):
+        if line_number >= 1:
+            data = json.loads(line)
+            list_words = data["token"]
+            sentence = " ".join(list_words)
+            tokens = tokenizer.tokenize(sentence)
+            tokens_ids = tokenizer.convert_tokens_to_ids(tokens)
+            tokens_ids = [tokenizer.cls_token_id] + tokens_ids + [tokenizer.sep_token_id]
+            input_ids = torch.tensor(tokens_ids).unsqueeze(0).to(device)
 
-# 定义接收服务器反馈的线程函数
-def receive_thread():
-    while True:
-        # 接收服务器的返回数据
-        server_data = client_socket.recv(1024).decode()
+            with torch.no_grad():
+                outputs = model(input_ids)
+                last_hidden_state = outputs.last_hidden_state
+                word_embeddings = last_hidden_state.squeeze(0)
 
-        # 输出服务器返回的数据
-        print("收到回复：", server_data)
+                for i, token in enumerate(tokens):
+                    word_embedding_300 = reducer(word_embeddings[i])  # Reduce the dimensionality
 
-# 创建接收用户输入的线程
-input_thread = threading.Thread(target=input_thread)
-input_thread.daemon = True
-input_thread.start()
+                    print(word_embedding_300.shape)
+                    data_sentence[token] = word_embedding_300.numpy().tolist()
 
-# 创建接收服务器反馈的线程
-receive_thread = threading.Thread(target=receive_thread)
-receive_thread.daemon = True
-receive_thread.start()
+                with open("output.json", "a") as file:
+                    json.dump(data_sentence, file)
+                    file.write("\n")
 
-# 等待两个线程结束
-input_thread.join()
-receive_thread.join()
-
-# 关闭套接字
-client_socket.close()
+        print("————————————%srow——————————————" % line_number, round(line_number / 804414, 5))

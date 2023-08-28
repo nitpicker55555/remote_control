@@ -3,21 +3,36 @@ import struct
 import threading
 
 import cv2
+import pyautogui
+import pyperclip
 
 import control_local
 from PIL import ImageGrab
 import os
+import pygetwindow as gw
 
 import music_info
 
 """
-nohup python -u listen.py > out.log 2>&1 &
+cd C:\\Users\\Morning\\.ssh
 ssh -i ssh-key-2023-02-27.key opc@130.61.253.72
 cd /home/opc/communication/
+nohup python -u listen.py > out.log 2>&1 &
 netstat -luntp
 shutdown_sever
 """
-host = '130.61.253.72'  # 设置服务器的IP地址或域名
+def get_lan_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+host = get_lan_ip() # 设置服务器的IP地址或域名
 #host="localhost"
 port = 8000  # 设置服务器的端口号
 RECONNECT_INTERVAL=3
@@ -62,16 +77,18 @@ def send_machine(data):
 def music_foru():
     global stand
     stand="no"
-    title_ori = control_local.music_name()
-    if title_ori!="":
-        stand = "music"
-        music_info.thumb()
-        image_process("tmbb.png","♫ :) "+title_ori)
+    #title_ori = control_local.music_name()
+    #if title_ori!="":
+        #stand = "music"
+        #music_info.thumb()
+        #image_process("tmbb.png","♫ :) "+title_ori)
         #send_machine(("♫ :) "+title_ori))
     while True:
-        title = control_local.music_name()
-        time.sleep(1)
-        title2 = control_local.music_name()
+        #title = control_local.music_name()
+        #time.sleep(1)
+        #title2 = control_local.music_name()
+        title2=""
+        title=""
         if (title2!=title and title2!=""): #切歌
             stand="music"
             try:
@@ -111,9 +128,11 @@ def receive_thread(stop_event):
             s.close()
             s = None
             continue
+
         if "reboot_function" in data : s=None
         if "capture_image" in data:
             image_process("Bgdd.png")
+
         if "capture_camera" in data:
 
             if t4.is_alive()!=True:
@@ -131,9 +150,26 @@ def receive_thread(stop_event):
             control_local.receive(data)
             #print(user_input)
             if (stand !="music"):
-                user_input="get it"
-                s.send(user_input.encode())
-                print(user_input)
+                if "get_clip" in data:
+                    active_window = gw.getActiveWindow()
+                    try:
+                        pre_clip=pyperclip.paste()
+                    except:
+                        pre_clip=""
+                        print("pyperclip拒绝访问")
+                    pyautogui.hotkey("ctrl", "c")
+
+                    if "Google Chrome" in active_window.title and pre_clip==pyperclip.paste():
+                        pyautogui.hotkey("ctrl","l")
+                    pyautogui.hotkey("ctrl", "c")
+                    s.send(pyperclip.paste().encode())
+                    print(pyperclip.paste())
+                if "get_file" in data:
+                    pass
+                else:
+                    user_input="get it"
+                    s.send(user_input.encode())
+                    print(user_input)
 def camera_thread():
     global camera_cap,cap
 

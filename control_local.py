@@ -3,16 +3,16 @@ import pyperclip
 import time
 pyautogui.FAILSAFE=False
 
-import music_info
+#import music_info
 
 
 
 
-def music_name():
+#def music_name():
 
-    return music_info.title()
-def music_tmb():
-    music_info.thumb()
+   # return music_info.title()
+#def music_tmb():
+   # music_info.thumb()
 def receive(data):
     if "sb" in data:
         move_mouse(data)
@@ -21,13 +21,13 @@ def receive(data):
         return control(data)
 def control(command):
     if command == "music_start":
-        command = "win,spotify##,enter,playpause"
+        command = "win,qq音乐##,enter,playpause"
 
 
     command_split = command.split(",")
     for ccs in command_split:
         if "click" in ccs:
-            if "doubleclick" in ccs:
+            if "rightclick" in ccs:
                 pyautogui.rightClick()
             else:
                 pyautogui.click()
