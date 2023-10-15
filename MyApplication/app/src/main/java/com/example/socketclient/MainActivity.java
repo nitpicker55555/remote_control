@@ -4,6 +4,7 @@ import static android.opengl.Matrix.length;
 
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.ClipData;
@@ -150,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private int wordSize = 0;
     private String image_kind;
     private static final String TAG = "PERMISSION_TAG";
-
+    private UdpClient udpClient;
 
     String[] options = { "get_clip","capture_image","capture_camera","win 3","win 1", "backspace","volumemute","volumeup","volumedown","shutdown_sever"};
     Handler handler = new Handler(Looper.getMainLooper());
@@ -161,6 +162,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Spinner mySpinner = (Spinner) findViewById(R.id.mySpinner);
@@ -192,7 +194,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         imageView.setClickable(true);
         imageView_picture.setClickable(true);
         imageView.setOnTouchListener(this);
-
+        udpClient = new UdpClient(mip_text.getText().toString());
 
         if (isNetworkAvailable(this)) {
             showBubble("网络通畅");
@@ -205,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, options);
         mySpinner.setAdapter(adapter);
-        rotatingView.setRotationListener(direction -> nettyClient.sendMessage(direction));
+        rotatingView.setRotationListener(this::sendUdpMessage);
         mySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
@@ -219,6 +221,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             }
 
         });
+
 
 
 
@@ -517,7 +520,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 // 加载原图
                 //File file = new File(Environment.getExternalStorageDirectory(), "image.png"); // 外部存储器中的图片路径
                 File imagePath = new File(Environment.getExternalStorageDirectory(), "image.png"); // 创建Uri对象
-                openImage(imagePath);
+//                openImage(imagePath);
             }
         });
         mButton10.setOnLongClickListener(new View.OnLongClickListener() {
@@ -942,36 +945,37 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 String  strr = String.format("%.2f",distance_y);
                 double yy = Double.parseDouble(strr);
                 //edd(Double.toString(xx)+","+Double.toString(yy)+"sb");
-                nettyClient.sendMessage(Double.toString(xx)+","+Double.toString(yy)+"sb");
+                sendUdpMessage(Double.toString(xx)+","+Double.toString(yy));
+//                nettyClient.sendMessage(Double.toString(xx)+","+Double.toString(yy)+"sb");
                 break;
             case MotionEvent.ACTION_UP:
                 // 手指松开时，让控件返回初始位置
-                imageView.animate().x(390).y(1766).setDuration(800).start();
+                imageView.animate().x(610).y(1716).setDuration(800).start();
                 break;
         }
         return true;
     }
 
 
-    private void openImage(File imagePath) {
-        // 创建Uri对象
-
-
-        // 创建Intent对象
-
-        Uri contentUri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileprovider", imagePath);
-
-        Intent intent = new Intent();
-        intent.setAction(Intent.ACTION_VIEW);
-        intent.setDataAndType(contentUri, "image/*");
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-        if (intent.resolveActivity(getPackageManager()) != null) {
-            startActivity(intent);
-        } else {
-            Toast.makeText(this, "No app available to view image", Toast.LENGTH_SHORT).show();
-        }
-    }
+//    private void openImage(File imagePath) {
+//        // 创建Uri对象
+//
+//
+//        // 创建Intent对象
+//
+//        Uri contentUri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileprovider", imagePath);
+//
+//        Intent intent = new Intent();
+//        intent.setAction(Intent.ACTION_VIEW);
+//        intent.setDataAndType(contentUri, "image/*");
+//        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//
+//        if (intent.resolveActivity(getPackageManager()) != null) {
+//            startActivity(intent);
+//        } else {
+//            Toast.makeText(this, "No app available to view image", Toast.LENGTH_SHORT).show();
+//        }
+//    }
 
     private void createFolder(byte[] byteArray){
         //get folder name
@@ -1062,6 +1066,23 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
 
         clipboard.setPrimaryClip(clip);
+    }
+    @SuppressLint("StaticFieldLeak")
+    private void sendUdpMessage(String message) {
+        // 考虑到我们之前讨论的，sendMessage 方法可能会阻塞,
+        // 我们应该在后台线程上执行这个方法，以避免阻塞主线程。
+//        new AsyncTask<String, Void, Void>() {
+//            @Override
+        if (!message.contains(",")){
+            if(stand_const==1){
+                message+="quick";
+            }
+        }
+
+        udpClient.sendMessage(message);
+//        Log.d("Mainactivity==",message);
+        Log.d("Mainactivity==",message);
+//        return null;
     }
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

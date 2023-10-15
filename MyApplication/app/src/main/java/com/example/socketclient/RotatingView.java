@@ -1,5 +1,5 @@
 package com.example.socketclient;
-
+import com.example.socketclient.UdpClient;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -12,27 +12,35 @@ public class RotatingView extends View {
     private Vibrator vibrator;
     private float totalRotatedAngle = 0;
     private GestureDetector gestureDetector;
+    private UdpClient udpclient;
+
 
     public RotatingView(Context context) {
         super(context);
         init();
+//        udpclient = new UdpClient();
     }
 
     public RotatingView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
+//        udpclient = new UdpClient();
     }
 
     public RotatingView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
+
     }
 
     public RotatingView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init();
+
     }
     private void init() {
+//        udpclient = new UdpClient();
+
         gestureDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onDown(MotionEvent e) {
@@ -59,9 +67,13 @@ public class RotatingView extends View {
                     if(totalRotatedAngle > 0) {
                         Log.d("RotatingView", "shun");
                         rotationListener.onRotation("down");
+//
+//                        udpclient.sendMessage("down");
                     } else {
+
                         Log.d("RotatingView", "ni");
                         rotationListener.onRotation("up");
+//                        udpclient.sendMessage("up");
                     }
                     totalRotatedAngle %= 20;
                 }
