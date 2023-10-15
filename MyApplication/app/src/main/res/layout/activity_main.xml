@@ -22,7 +22,7 @@
 
         />
 
-    <EditText
+    <AutoCompleteTextView
         android:id="@+id/ip_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -32,8 +32,25 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
-        android:text="192.168.1.101"
+        android:completionThreshold="1"
+        android:text="192.168.1.100"
+
         tools:ignore="TextSizeCheck" />
+
+    <Button
+        android:id="@+id/button_qr"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+
+        android:layout_alignTop="@id/ip_text"
+        android:layout_alignRight="@id/ip_text"
+        android:layout_marginRight="-70dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/button_light"
+        android:text="连"
+        android:textAllCaps="false"
+        android:textSize="16sp" />
+
     <TextView
         android:id="@+id/statusTextView"
         android:layout_width="wrap_content"
@@ -64,7 +81,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/editText"
-        android:text="ctrl e"
+        android:text="ctrl w"
         android:minHeight="48dp"
         tools:ignore="TextSizeCheck" />
     <EditText
@@ -303,6 +320,17 @@
         android:layout_alignStart="@id/iv_bg"
         android:layout_alignEnd="@id/iv_bg"
         android:src="@drawable/fore" />
+
+    <com.example.socketclient.RotatingView
+        android:id="@+id/rotatingView"
+        android:layout_alignTop="@id/button3"
+        android:layout_alignEnd="@id/button3"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/ic_launcher_foreground" />
 
 
 </RelativeLayout>

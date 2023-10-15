@@ -1,3 +1,5 @@
+import re
+
 import pyautogui
 import pyperclip
 import time
@@ -7,18 +9,20 @@ pyautogui.FAILSAFE=False
 
 
 
-
-#def music_name():
-
-   # return music_info.title()
-#def music_tmb():
-   # music_info.thumb()
 def receive(data):
+    pattern = r'___s(.*?)___e'
+    messages = re.findall(pattern, data)
     if "sb" in data:
+        data=messages[-1]
         move_mouse(data)
+    elif 'up' in messages:
+        pyautogui.scroll(len(messages)*100)
+    elif 'down' in messages:
+        pyautogui.scroll(len(messages)*-100)
     else:
-        print("收到命令", data)
-        return control(data)
+        for data in messages:
+            print("收到命令", data)
+            return control(data)
 def control(command):
     if command == "music_start":
         command = "win,qq音乐##,enter,playpause"
@@ -40,6 +44,7 @@ def control(command):
             if "," in command: time.sleep(1)
 
 def move_mouse(distance_original):
+    print(distance_original)
     distancess = distance_original.split("sb")
     distancess.pop(-1)
 

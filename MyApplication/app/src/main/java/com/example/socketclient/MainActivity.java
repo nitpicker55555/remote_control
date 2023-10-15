@@ -11,6 +11,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
@@ -28,6 +29,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.MotionEvent;
 
@@ -45,8 +47,13 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
+import android.view.inputmethod.EditorInfo;
+import android.widget.AutoCompleteTextView;
+import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.os.Vibrator;
 import android.util.AttributeSet;
@@ -74,6 +81,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -103,17 +111,23 @@ import android.view.animation.Interpolator;
 
 @RequiresApi(api = Build.VERSION_CODES.R)
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
+    private static final String PREFS_NAME = "MyApp_History";
+    private static final String KEY_HISTORY = "input_history";
+
+    private AutoCompleteTextView mip_text;
+    private ArrayAdapter<String> adapter;
+    private ArrayList<String> history;
     private static final int REQUEST_CODE_MANAGE_EXTERNAL_STORAGE_PERMISSION = 1;
     private int clickNum = 0;
     private static final int DOUBLE_CLICK_INTERVAL = 300; // 双击事件的时间间隔，单位为毫秒
     private static final long CLICK_INTERVAL_TIME = 300;
     private float lastX, lastY;
-    private EditText mEditText,mEditText2,mEditText4,mEditText3,mip_text;
+    private EditText mEditText,mEditText2,mEditText4,mEditText3;
 
 
     private TextView mStatusTextView, mMessageTextView;
     private Button mButton1, mButton2, mButton3, mButton4, mButton5,
-            mButton6, mButton7, mButton8, mButton9, mButton10,mButton11,mButton12,mButton13;
+            mButton6, mButton7, mButton8, mButton9, mButton10,mButton11,mButton12,mButton13,mButtonqr;
     private final String mServerIP = "130.61.253.72"; // 指定服务器 IP 地址
     private final int mServerPort = 1234; // 指定服务器端口号
     private Socket mSocket;
@@ -136,6 +150,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private int wordSize = 0;
     private String image_kind;
     private static final String TAG = "PERMISSION_TAG";
+
+
     String[] options = { "get_clip","capture_image","capture_camera","win 3","win 1", "backspace","volumemute","volumeup","volumedown","shutdown_sever"};
     Handler handler = new Handler(Looper.getMainLooper());
     private static final String[] PERMISSIONS_STORAGE = {
@@ -168,7 +184,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mButton11= findViewById(R.id.button11);
         mButton12= findViewById(R.id.button12);
         mButton13= findViewById(R.id.button13);
+        mButtonqr= findViewById(R.id.button_qr);
         imageView  = findViewById(R.id.iv_stick);
+        RotatingView rotatingView = findViewById(R.id.rotatingView);
         imageView_picture  = findViewById(R.id.picture);
         View view = findViewById(R.id.mainLayout); // 获取整个界面的布局
         imageView.setClickable(true);
@@ -178,37 +196,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         if (isNetworkAvailable(this)) {
             showBubble("网络通畅");
-            new Thread(() -> {
-                boolean isConnected = false;
-                while (!isConnected) {
-                    try {
-                        nettyClient = new NettyClient(mip_text.getText().toString(),1234);
-                        nettyClient.run();
-                        isConnected = true;  //连接成功，跳出循环
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        runOnUiThread(() -> mStatusTextView.setText("连接失败1"));
-                        // 重试之前的等待时间，避免过度消耗资源
-                        try {
-                            Thread.sleep(2000);
-                            showBubble("连接失败1 尝试重连");
-                        } catch (InterruptedException interruptedException) {
-                            interruptedException.printStackTrace();
-                        }
-                    } catch (Exception e) {
-                        // 其他异常，显示错误消息
-                        e.printStackTrace();
-                        runOnUiThread(() -> mStatusTextView.setText("连接失败2"));
-                        // 重试之前的等待时间，避免过度消耗资源
-                        try {
-                            Thread.sleep(2000);
-                            showBubble("连接失败2 尝试重连");
-                        } catch (InterruptedException interruptedException) {
-                            interruptedException.printStackTrace();
-                        }
-                    }
-                }
-            }).start();
+
 
         } else {
             showBubble("网络不通畅");
@@ -217,7 +205,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, options);
         mySpinner.setAdapter(adapter);
-
+        rotatingView.setRotationListener(direction -> nettyClient.sendMessage(direction));
         mySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
@@ -247,6 +235,59 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             }
         });
         // 按钮1：显示桌面
+        mip_text.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mip_text.showDropDown();
+            }
+        });
+
+        ArrayAdapter<String> finalAdapter1 = adapter;
+        mButtonqr.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View View) {
+                String input = mip_text.getText().toString();
+                if (!TextUtils.isEmpty(input) && !history.contains(input)) {
+                    history.add(input);
+                    saveHistory(history);
+                    finalAdapter1.notifyDataSetChanged();
+                }
+                new Thread(() -> {
+                    boolean isConnected = false;
+                    while (!isConnected) {
+                        try {
+                            nettyClient = new NettyClient(mip_text.getText().toString(),1234);
+                            nettyClient.run();
+                            isConnected = true;  //连接成功，跳出循环
+                            showBubble(mip_text.getText().toString()+" 端口1234");
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                            runOnUiThread(() -> mStatusTextView.setText("连接失败1"));
+                            // 重试之前的等待时间，避免过度消耗资源
+                            try {
+                                Thread.sleep(2000);
+                                showBubble("连接失败1 尝试重连");
+                            } catch (InterruptedException interruptedException) {
+                                interruptedException.printStackTrace();
+                            }
+                        } catch (Exception e) {
+                            // 其他异常，显示错误消息
+                            e.printStackTrace();
+                            runOnUiThread(() -> mStatusTextView.setText("连接失败2"));
+                            // 重试之前的等待时间，避免过度消耗资源
+                            try {
+                                Thread.sleep(2000);
+                                showBubble("连接失败2 尝试重连");
+                            } catch (InterruptedException interruptedException) {
+                                interruptedException.printStackTrace();
+                            }
+                        }
+                    }
+                }).start();
+            }
+        });
+
         mButton1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -450,7 +491,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     // 用户点击确定，执行任务
-                                    nettyClient.sendMessage("win d,alt f4,enter");
+                                    nettyClient.sendMessage("shut_computer");
                                 }
                             });
                             builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
@@ -537,8 +578,38 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 updateUI();
             }
         });
+        history = loadHistory();
 
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, history);
+        mip_text.setAdapter(adapter);
 
+        ArrayAdapter<String> finalAdapter = adapter;
+        mip_text.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                String input = mip_text.getText().toString();
+                if (!history.contains(input)) {
+                    history.add(input);
+                    saveHistory(history);
+                    finalAdapter.notifyDataSetChanged();
+                }
+            }
+            return false;
+        });
+    }
+    private ArrayList<String> loadHistory() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String savedHistory = prefs.getString(KEY_HISTORY, "");
+        Log.d(TAG, savedHistory+"savedHistory:");
+        return new ArrayList<>(Arrays.asList(savedHistory.split(",")));
+    }
+
+    private void saveHistory(ArrayList<String> historyList) {
+        Log.d(TAG, historyList+"historyList:");
+
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(KEY_HISTORY, TextUtils.join(",", historyList));
+        editor.apply();
     }
     public boolean isNetworkAvailable(Context context) {
         // 获取系统服务
@@ -787,7 +858,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 else{
                     String wenz =response.toString(CharsetUtil.UTF_8);
                     System.out.println("receive data   "+wenz);
-                    if (!"get it".equals(wenz)){
+                    if (!wenz.contains("get it")){
                         copyToClipboard(wenz);
                         if(wenz.contains("http")){
                             Log.d("acc","http存在 " +wenz);
@@ -813,6 +884,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
         public void sendMessage(String message) {
             // Get the channel to the server
+            message="___s"+message+"___e";
             Channel channel = future.channel();
 
             // Create a byte buffer with the message

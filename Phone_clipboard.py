@@ -148,7 +148,7 @@ def start_server(ip, port):
     print("Waiting for a connection...")
     client_socket, client_address = server_socket.accept()
     print("Accepted connection from", client_address)
-
+    code_list=['验证码','code']
     while True:
             num=0
         # Receive data
@@ -160,17 +160,20 @@ def start_server(ip, port):
                         if content.replace(pre_data,"")!="" and content.split("----")[1]!="null":
                             print("Received data:", content)
 
+
                             if "剪贴板" in content:
                                 if content==clipboard_str:
                                     print("cf")
                                     content=""
 
-                            if "验证码" in content:
-                                pyperclip.copy(re.findall('\d+', content)[0])
-                                print(re.findall('\d+', content))
-                                pyautogui.hotkey("ctrl", "v")
-                                pyautogui.hotkey("enter")
-
+                            if any(code in content for code in code_list):
+                                try:
+                                    pyperclip.copy(re.findall('\d+', content)[0])
+                                    print(re.findall('\d+', content))
+                                    pyautogui.hotkey("ctrl", "v")
+                                    pyautogui.hotkey("enter")
+                                except:
+                                    pass
                             if "http" in content and "phone_clip_web" not in content:
                                 url_pattern = r'(https?://\S+)'
 
