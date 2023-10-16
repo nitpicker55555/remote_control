@@ -1,6 +1,10 @@
 import socket
 import pyautogui
 import threading
+global x,y
+x, y = pyautogui.position()
+
+
 def execute_hotkey(data):
     if "quick" in data:
         if "down" in data:
@@ -13,24 +17,25 @@ def execute_hotkey(data):
 
 # 在新线程中执行
 def move_mouse(distance_original):
+    global x, y
     # print(distance_original)
 
 
     # distances = distancess
     distance = distance_original.split(",")
-    x, y = pyautogui.position()
 
     # print(distance)
     if len(distance) == 1:
         distance.append(0.0)
     try:
-        x_new = x + float(distance[0])/8
-        y_new = y + float(distance[1])/8
+        x_new = x + float(distance[0])*2
+        y_new = y + float(distance[1])*2
         pyautogui.moveTo(x_new, y_new)
     except ValueError:
         print("no float")
 
 def udp_server(ip='0.0.0.0', port=8888):
+    global x, y
     # 创建一个UDP socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -42,9 +47,11 @@ def udp_server(ip='0.0.0.0', port=8888):
         while True:
             # 接收数据
             data, addr = server_socket.recvfrom(1024)  # 使用1024作为缓冲区大小
-            # print(f"Received '{data.decode()}' from {addr}")
+            print(f"Received '{data.decode()}' from {addr}")
             if "," in data.decode():
                 threading.Thread(target=move_mouse, args=(data.decode(),)).start()
+            elif "mouse_reset" in data.decode():
+                x, y = pyautogui.position()
             else:
 
                 threading.Thread(target=execute_hotkey, args=(data.decode(),)).start()

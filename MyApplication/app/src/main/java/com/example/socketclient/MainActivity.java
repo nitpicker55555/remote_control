@@ -950,7 +950,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 break;
             case MotionEvent.ACTION_UP:
                 // 手指松开时，让控件返回初始位置
-                imageView.animate().x(610).y(1716).setDuration(800).start();
+                sendUdpMessage("mouse_reset");
+                imageView.animate().x(610).y(1716).setDuration(400).start();
                 break;
         }
         return true;
