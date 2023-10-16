@@ -28,8 +28,8 @@ def move_mouse(distance_original):
     if len(distance) == 1:
         distance.append(0.0)
     try:
-        x_new = x + float(distance[0])*2
-        y_new = y + float(distance[1])*2
+        x_new = x + float(distance[0])*4
+        y_new = y + float(distance[1])*4
         pyautogui.moveTo(x_new, y_new)
     except ValueError:
         print("no float")
