@@ -4,7 +4,7 @@ import threading
 global x,y
 x, y = pyautogui.position()
 
-
+pyautogui.FAILSAFE=False
 def execute_hotkey(data):
     if "quick" in data:
         if "down" in data:

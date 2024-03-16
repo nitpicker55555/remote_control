@@ -46,6 +46,7 @@ def connect_to_server():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         print("尝试连接")
+
         s.connect((host, port))
         print('Connected to server.')
         user_input = "computer"

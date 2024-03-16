@@ -194,7 +194,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         imageView.setClickable(true);
         imageView_picture.setClickable(true);
         imageView.setOnTouchListener(this);
-        udpClient = new UdpClient(mip_text.getText().toString());
+
 
         if (isNetworkAvailable(this)) {
             showBubble("网络通畅");
@@ -1074,6 +1074,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         // 我们应该在后台线程上执行这个方法，以避免阻塞主线程。
 //        new AsyncTask<String, Void, Void>() {
 //            @Override
+        if (udpClient==null){
+            udpClient = new UdpClient(mip_text.getText().toString());
+        }
+
         if (!message.contains(",")){
             if(stand_const==1){
                 message+="quick";
