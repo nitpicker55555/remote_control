@@ -8,8 +8,26 @@ import requests
 
 
 # 定义信号处理函数
-def signal_handler(sig, frame):
-    print('收到关闭信号，准备退出...')
+# def signal_handler(sig, frame):
+#
+#     print('收到关闭信号，准备退出...')
+#     result = subprocess.run(['git', 'add','windows_record.jsonl'], capture_output=True, text=True)
+#     print("Exit code:", result.returncode)
+#     print("stdout:", result.stdout)
+#     print("stderr:", result.stderr)
+#     result = subprocess.run(['git', 'commit','-m',"'record jsonl'"], capture_output=True, text=True)
+#     print("Exit code:", result.returncode)
+#     print("stdout:", result.stdout)
+#     print("stderr:", result.stderr)
+#     result = subprocess.run(['git', 'push'], capture_output=True, text=True)
+#     # 打印执行结果
+#     print("Exit code:", result.returncode)
+#     print("stdout:", result.stdout)
+#     print("stderr:", result.stderr)
+#     sys.exit(0)
+# signal.signal(signal.SIGINT, signal_handler)
+# signal.signal(signal.SIGTERM, signal_handler)
+def main():
     result = subprocess.run(['git', 'add','windows_record.jsonl'], capture_output=True, text=True)
     print("Exit code:", result.returncode)
     print("stdout:", result.stdout)
@@ -23,10 +41,6 @@ def signal_handler(sig, frame):
     print("Exit code:", result.returncode)
     print("stdout:", result.stdout)
     print("stderr:", result.stderr)
-    sys.exit(0)
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
-def main():
     response = requests.get("https://ipinfo.io/")
     data = response.json()
     del data['readme']
