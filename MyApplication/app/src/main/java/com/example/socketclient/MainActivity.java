@@ -52,6 +52,7 @@ import android.view.WindowManager;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AutoCompleteTextView;
 import android.widget.ListView;
 import android.widget.PopupWindow;
@@ -138,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private boolean mIsDarkMode = false;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private NettyClient nettyClient;
-    private ImageView imageView ;
+    private ImageView imageView ,miv_bg;
     private ImageView imageView_picture ;
     private Bitmap bitmap;
     private static final int STORAGE_PERMISSION_CODE = 100;
@@ -188,12 +189,15 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mButton13= findViewById(R.id.button13);
         mButtonqr= findViewById(R.id.button_qr);
         imageView  = findViewById(R.id.iv_stick);
+        miv_bg  = findViewById(R.id.iv_bg);
         RotatingView rotatingView = findViewById(R.id.rotatingView);
         imageView_picture  = findViewById(R.id.picture);
         View view = findViewById(R.id.mainLayout); // 获取整个界面的布局
         imageView.setClickable(true);
-        imageView_picture.setClickable(true);
         imageView.setOnTouchListener(this);
+        miv_bg.setClickable(true);
+        miv_bg.setOnTouchListener(this);
+        imageView_picture.setClickable(true);
 
 
         if (isNetworkAvailable(this)) {
@@ -234,7 +238,29 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             public boolean onLongClick(View v) {
 
                 mEditText.setText("");
+                mEditText.requestFocus();
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.showSoftInput(mEditText, InputMethodManager.SHOW_IMPLICIT);
                 return true;
+            }
+        });
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String inputText = mEditText.getText().toString();
+                if (inputText.trim().isEmpty()) {
+                    // 输入内容为空或者只有空白字符
+                    // 在这里处理内容为空的情况
+                    System.out.println("EditText is empty");
+                } else {
+                    // 输入内容不为空
+                    mButton8.performLongClick();
+
+
+                    nettyClient.sendMessage("enter");
+                }
+
+
             }
         });
         // 按钮1：显示桌面
@@ -317,6 +343,12 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         // 按钮2：tab
         mButton11.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                nettyClient.sendMessage("click");
+            }
+        });
+        miv_bg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 nettyClient.sendMessage("click");
@@ -594,6 +626,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     history.add(input);
                     saveHistory(history);
                     finalAdapter.notifyDataSetChanged();
+
                 }
             }
             return false;
