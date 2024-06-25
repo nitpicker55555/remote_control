@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import socket
@@ -14,8 +15,22 @@ from PIL import Image, ImageDraw, ImageFont
 import random
 from toast_glass import input_func  # 导入MainWindow类
 import subprocess
+from gpt_api_singel import *
 # import psutil
+ask_prompt = """
+用中文简短（几个字以内）回答我朋友的信息
 
+她要我帮他抢Notfall termin，在早上，如果她问我醒了没有，你就说醒了，在抢
+如果他问我抢到没有，你就说还没有
+
+如果她说抢到了，你就说太牛啦
+总之简短回复她，适当的时候鼓励她，一定简短
+背景信息：
+我们是好朋友，很熟悉，住在德国学生宿舍
+她求了很多同学帮她一起抢
+"""
+messages=[]
+messages.append(message_template('system', ask_prompt))
 # 要打开的程序的路径
 def open_file(path="C:\Program Files (x86)\Tencent\QQMusic\QQMusic1942.19.33.18\QQMusic.exe"):
     exe_path = path
@@ -136,6 +151,21 @@ def send_mes():
     print(rece)
     #client_socket.send((rece).encode("utf-8"))
     print("123成功")
+def auto_answer(query):
+
+
+    messages.append(message_template('user', query))
+    print(messages)
+    result = chat_single(messages)[0]
+
+    messages.append(message_template('assistant', result))
+
+    print(result)
+    return result
+def write_answer(query):
+    pyperclip.copy(query)
+    pyautogui.hotkey("ctrl","v")
+    pyautogui.hotkey('enter')
 def start_server(ip, port):
     pre_data = ""
 
@@ -156,14 +186,24 @@ def start_server(ip, port):
                 try:
                     data = client_socket.recv(1024).decode("utf-8")
                     data=data.replace("\n","")
+
+
+
+
                     for content in data.split("****"):
                         if content.replace(pre_data,"")!="" and content.split("----")[1]!="null":
                             print("Received data:", content)
+                            head=content.split('----')[0]
+                            if head=='剪贴板':
+                                inner_content=content.split('----')[1]
+                                answer=auto_answer(inner_content)
+                                time.sleep(1)
+                                write_answer(answer)
 
 
                             if "剪贴板" in content:
                                 if content==clipboard_str:
-                                    print("cf")
+                                    print(content)
                                     content=""
 
                             if any(code in content for code in code_list):
@@ -194,10 +234,10 @@ def start_server(ip, port):
                             pre_data=content
                         else:
                             pass
-                except:
+                except Exception as e:
 
                     num+=1
-                    print("重连",num)
+                    print("重连",num,e)
                     time.sleep(1)
             pre_data = ""
 
